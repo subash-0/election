@@ -3,13 +3,15 @@
 import { useMemo } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { X } from 'lucide-react'
+import { RotateCw } from 'lucide-react'
 import * as Slider from '@radix-ui/react-slider'
+import nepalify from "nepalify"
 
 interface Filters {
   searchTerm: string
-  party: string
+  province: string
   district: string
+  party: string
   gender: string
   qualification: string
   chetra: number
@@ -19,6 +21,7 @@ interface Filters {
 interface CandidateFiltersProps {
   filters: Filters
   setFilters: (filters: Filters) => void
+  provinces: string[]
   parties: string[]
   districts: string[]
   qualifications: string[]
@@ -27,6 +30,7 @@ interface CandidateFiltersProps {
     CandidateName: string
     PoliticalPartyName: string
     DistrictName: string
+    StateName: string
     ConstName: number
     Gender: string
     QUALIFICATION: string
@@ -37,6 +41,7 @@ interface CandidateFiltersProps {
 export function CandidateFilters({
   filters,
   setFilters,
+  provinces,
   parties,
   districts,
   qualifications,
@@ -45,8 +50,9 @@ export function CandidateFilters({
   const handleReset = () => {
     setFilters({
       searchTerm: '',
-      party: '',
+      province: '',
       district: '',
+      party: '',
       gender: '',
       qualification: '',
       chetra: 0,
@@ -54,7 +60,19 @@ export function CandidateFilters({
     })
   }
 
-  // Get unique constituencies for the selected district
+  // Filter districts by selected province
+  const filteredDistricts = useMemo(() => {
+    if (!filters.province) return districts
+    return Array.from(
+      new Set(
+        candidates
+          .filter(c => c.StateName === filters.province)
+          .map(c => c.DistrictName)
+      )
+    ).sort()
+  }, [filters.province, districts, candidates])
+
+  // Available constituencies for selected district
   const availableChetras = useMemo(() => {
     if (!filters.district) return []
     const chetras = candidates
@@ -64,7 +82,7 @@ export function CandidateFilters({
   }, [filters.district, candidates])
 
   return (
-    <div className="bg-card border-b border-border md:sticky top-16 z-40">
+    <div className="bg-card border-b border-border md:sticky top-24 z-40">
       <div className="container mx-auto px-4 py-6">
         <div className="space-y-4">
           {/* Name Search */}
@@ -74,34 +92,37 @@ export function CandidateFilters({
             </label>
             <Input
               placeholder="उम्मेदवारको नाम..."
-              value={filters.searchTerm}
-              onChange={(e) =>
-                setFilters({ ...filters, searchTerm: e.target.value })
+              value={filters.searchTerm ? nepalify.format(filters.searchTerm) : ''}
+              onChange={e =>
+                setFilters({ ...filters, searchTerm: nepalify.format(e.target.value) })
               }
               className="h-10 font-[Noto_Sans_Devanagari]"
-                
             />
           </div>
 
           {/* Filters Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3">
-            {/* Party */}
+            
+            {/* Province */}
             <div>
               <label className="text-xs font-medium text-foreground/70 mb-2 block">
-                राजनीतिक दल
+                प्रदेश
               </label>
               <select
-                value={filters.party}
-                onChange={(e) =>
-                  setFilters({ ...filters, party: e.target.value })
+                value={filters.province}
+                onChange={e =>
+                  setFilters({
+                    ...filters,
+                    province: e.target.value,
+                    district: '', // reset district when province changes
+                    chetra: 0, // reset constituency
+                  })
                 }
                 className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
               >
-                <option value="">सबै दल</option>
-                {parties.map((party) => (
-                  <option key={party} value={party}>
-                    {party}
-                  </option>
+                <option value="">सबै प्रदेश</option>
+                {provinces.map(p => (
+                  <option key={p} value={p}>{p}</option>
                 ))}
               </select>
             </div>
@@ -113,20 +134,14 @@ export function CandidateFilters({
               </label>
               <select
                 value={filters.district}
-                onChange={(e) =>
-                  setFilters({
-                    ...filters,
-                    district: e.target.value,
-                    chetra: 0, // reset constituency when district changes
-                  })
+                onChange={e =>
+                  setFilters({ ...filters, district: e.target.value, chetra: 0 })
                 }
                 className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
               >
                 <option value="">सबै जिल्ला</option>
-                {districts.map((district) => (
-                  <option key={district} value={district}>
-                    {district}
-                  </option>
+                {filteredDistricts.map(d => (
+                  <option key={d} value={d}>{d}</option>
                 ))}
               </select>
             </div>
@@ -138,7 +153,7 @@ export function CandidateFilters({
               </label>
               <select
                 value={filters.chetra || ''}
-                onChange={(e) =>
+                onChange={e =>
                   setFilters({
                     ...filters,
                     chetra: parseInt(e.target.value) || 0,
@@ -148,10 +163,27 @@ export function CandidateFilters({
                 disabled={!filters.district}
               >
                 <option value="">सबै</option>
-                {availableChetras.map((chetra) => (
-                  <option key={chetra} value={chetra}>
-                    {chetra}
-                  </option>
+                {availableChetras.map(chetra => (
+                  <option key={chetra} value={chetra}>{chetra}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Party */}
+            <div>
+              <label className="text-xs font-medium text-foreground/70 mb-2 block">
+                राजनीतिक दल
+              </label>
+              <select
+                value={filters.party}
+                onChange={e =>
+                  setFilters({ ...filters, party: e.target.value })
+                }
+                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+              >
+                <option value="">सबै दल</option>
+                {parties.map(p => (
+                  <option key={p} value={p}>{p}</option>
                 ))}
               </select>
             </div>
@@ -163,7 +195,7 @@ export function CandidateFilters({
               </label>
               <select
                 value={filters.gender}
-                onChange={(e) =>
+                onChange={e =>
                   setFilters({ ...filters, gender: e.target.value })
                 }
                 className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
@@ -181,16 +213,14 @@ export function CandidateFilters({
               </label>
               <select
                 value={filters.qualification}
-                onChange={(e) =>
+                onChange={e =>
                   setFilters({ ...filters, qualification: e.target.value })
                 }
                 className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
               >
                 <option value="">सबै योग्यता</option>
-                {qualifications.map((qual) => (
-                  <option key={qual} value={qual}>
-                    {qual}
-                  </option>
+                {qualifications.map(q => (
+                  <option key={q} value={q}>{q}</option>
                 ))}
               </select>
             </div>
@@ -203,7 +233,7 @@ export function CandidateFilters({
                 onClick={handleReset}
                 className="w-full h-10"
               >
-                <X className="w-4 h-4 mr-2" />
+                <RotateCw className="w-4 h-4 mr-2" />
                 रिसेट
               </Button>
             </div>
@@ -223,11 +253,8 @@ export function CandidateFilters({
               max={70}
               step={1}
               value={filters.ageRange}
-              onValueChange={(value) =>
-                setFilters({
-                  ...filters,
-                  ageRange: value as [number, number],
-                })
+              onValueChange={value =>
+                setFilters({ ...filters, ageRange: value as [number, number] })
               }
               className="relative flex items-center select-none touch-none w-full h-5"
             >
