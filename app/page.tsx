@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { Navbar } from '@/components/navbar'
 import { CandidateFilters } from '@/components/candidate-filters'
 import { CandidateCard } from '@/components/candidate-card'
@@ -21,6 +22,8 @@ interface Filters {
 }
 
 export default function Home() {
+  const router = useRouter()
+
   const [filters, setFilters] = useState<Filters>({
     searchTerm: '',
     party: '',
@@ -32,22 +35,36 @@ export default function Home() {
   })
 
   const [visibleCount, setVisibleCount] = useState(20)
+  const [selectedCandidates, setSelectedCandidates] = useState<number[]>([])
+
+  // Selection logic (max 2)
+  const toggleCandidateSelection = (id: number) => {
+    setSelectedCandidates((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((c) => c !== id)
+      }
+      if (prev.length === 2) return prev
+      return [...prev, id]
+    })
+  }
 
   // Unique values
   const parties = useMemo(
     () => [...new Set(candidates.map((c) => c.PoliticalPartyName))].sort(),
     []
   )
+
   const districts = useMemo(
     () => [...new Set(candidates.map((c) => c.DistrictName))].sort(),
     []
   )
+
   const qualifications = useMemo(
     () => [...new Set(candidates.map((c) => c.QUALIFICATION))].sort(),
     []
   )
 
-  // Filter candidates
+  // Filter logic
   const filteredCandidates = useMemo(() => {
     return candidates.filter((c) => {
       const matchesSearch =
@@ -57,11 +74,23 @@ export default function Home() {
       const matchesParty = filters.party === '' || c.PoliticalPartyName === filters.party
       const matchesDistrict = filters.district === '' || c.DistrictName === filters.district
       const matchesGender = filters.gender === '' || c.Gender === filters.gender
-      const matchesQualification = filters.qualification === '' || c.QUALIFICATION === filters.qualification
-      const matchesChetra = filters.chetra === 0 || c.ConstName === filters.chetra
-      const matchesAge = c.AGE_YR >= filters.ageRange[0] && c.AGE_YR <= filters.ageRange[1]
+      const matchesQualification =
+        filters.qualification === '' || c.QUALIFICATION === filters.qualification
+      const matchesChetra =
+        filters.chetra === 0 || c.ConstName === filters.chetra
+      const matchesAge =
+        c.AGE_YR >= filters.ageRange[0] &&
+        c.AGE_YR <= filters.ageRange[1]
 
-      return matchesSearch && matchesParty && matchesDistrict && matchesGender && matchesQualification && matchesChetra && matchesAge
+      return (
+        matchesSearch &&
+        matchesParty &&
+        matchesDistrict &&
+        matchesGender &&
+        matchesQualification &&
+        matchesChetra &&
+        matchesAge
+      )
     })
   }, [filters])
 
@@ -70,117 +99,91 @@ export default function Home() {
   return (
     <>
       <Navbar />
+
       <main className="min-h-screen bg-background">
-        {/* Hero Section */}
-        <section className="border-b border-border px-2 md:px-8 sm:px-4 lg:px-12 bg-gradient-to-br from-primary/5 via-background to-background py-12 md:py-20">
+
+        {/* Hero */}
+        <section className="border-b border-border bg-gradient-to-br from-primary/5 to-background py-16">
           <div className="container mx-auto px-4">
-            <div className="max-w-3xl">
-              <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4 leading-tight">
-                आफ्नो उम्मेदवार खोज्नुहोस्
-              </h1>
-              <p className="text-lg text-foreground/70 mb-8">
-                चुनाव उम्मेदवारहरूलाई राजनीतिक दल, जिल्ला, योग्यता र अन्य आधारमा खोज्नुहोस्। सचेत निर्णय लिनुहोस्।
-              </p>
-              <div className="flex gap-4">
-                <div className="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold">
-                  {filteredCandidates.length} उम्मेदवार फेला परे
-                </div>
-              </div>
+            <h1 className="text-4xl font-bold mb-4">
+              आफ्नो उम्मेदवार खोज्नुहोस्
+            </h1>
+            <p className="text-foreground/70 mb-6">
+              खोज्नुहोस्, विश्लेषण गर्नुहोस् र अब तुलना पनि गर्नुहोस्।
+            </p>
+            <div className="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold inline-block">
+              {filteredCandidates.length} उम्मेदवार फेला परे
             </div>
           </div>
         </section>
 
-        {/* Candidates Section */}
-        <section className="py-12 md:py-20 px-2 md:px-8 sm:px-4 lg:px-12">
-          <div className="container mx-auto px-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
-              {/* Filters */}
-              <div className="lg:col-span-1">
-                <CandidateFilters
-                  filters={filters}
-                  setFilters={setFilters}
-                  parties={parties}
-                  districts={districts}
-                  qualifications={qualifications}
-                  candidates={candidates}
-                />
-              </div>
+        {/* Candidates */}
+        <section className="py-16 container mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
 
-              {/* Candidates Grid */}
-              <div className="lg:col-span-3">
-                {visibleCandidates.length > 0 ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 md:grid-cols-2 gap-6">
-                    {visibleCandidates.map((candidate) => (
-                      <CandidateCard key={candidate.CandidateID} candidate={candidate} />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="col-span-full py-20 text-center">
-                    <div className="inline-block p-12 bg-secondary rounded-lg">
-                      <h3 className="text-xl font-semibold text-foreground mb-2">
-                        कोही उम्मेदवार फेला परेन
-                      </h3>
-                      <p className="text-foreground/70">
-                        अरु उम्मेदवार खोज्न आफ्नो फिल्टरलाई समायोजन गर्नुहोस्
-                      </p>
-                    </div>
-                  </div>
-                )}
+            <div>
+              <CandidateFilters
+                filters={filters}
+                setFilters={setFilters}
+                parties={parties}
+                districts={districts}
+                qualifications={qualifications}
+                candidates={candidates}
+              />
+            </div>
 
-                {/* Load More */}
-                {visibleCount < filteredCandidates.length && (
-                  <div className="mt-6 text-center">
-                    <Button onClick={() => setVisibleCount(prev => prev + 20)}>
-                      थप उम्मेदवारहरू देखाउनुहोस्
-                    </Button>
-                  </div>
-                )}
-              </div>
+            <div className="lg:col-span-3">
+
+              {visibleCandidates.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {visibleCandidates.map((candidate) => (
+                    <CandidateCard
+                      key={candidate.CandidateID}
+                      candidate={candidate}
+                      selected={selectedCandidates.includes(candidate.CandidateID)}
+                      onSelect={() =>
+                        toggleCandidateSelection(candidate.CandidateID)
+                      }
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="py-20 text-center">
+                  कोही उम्मेदवार फेला परेन
+                </div>
+              )}
+
+              {visibleCount < filteredCandidates.length && (
+                <div className="mt-8 text-center">
+                  <Button onClick={() => setVisibleCount(prev => prev + 20)}>
+                    थप उम्मेदवारहरू
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </section>
 
-        {/* Statistics & Charts Section */}
-        <section className="bg-secondary/30 border-t border-border py-12 md:py-20 px-2 md:px-8 sm:px-4 lg:px-12">
-          <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-foreground mb-12 text-center">
-              चुनाव तथ्याङ्क र विश्लेषण
-            </h2>
+        {/* Sticky Compare Button */}
+        {selectedCandidates.length > 0 && (
+          <div className="fixed bottom-6 right-6 bg-card border border-border shadow-xl rounded-xl p-4 z-50 w-64">
+            <p className="text-sm mb-3 text-foreground/70">
+              {selectedCandidates.length}/2 उम्मेदवार चयन गरिएको
+            </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-              <div className="bg-card rounded-lg p-6 border border-border">
-                <div className="text-4xl font-bold text-primary mb-2">
-                  {candidates.length}
-                </div>
-                <p className="text-foreground/70">कुल उम्मेदवार</p>
-              </div>
-              <div className="bg-card rounded-lg p-6 border border-border">
-                <div className="text-4xl font-bold text-accent mb-2">
-                  {[...new Set(candidates.map((c) => c.PoliticalPartyName))].length}
-                </div>
-                <p className="text-foreground/70">राजनीतिक दल</p>
-              </div>
-              <div className="bg-card rounded-lg p-6 border border-border">
-                <div className="text-4xl font-bold text-primary mb-2">
-                  {[...new Set(candidates.map((c) => c.DistrictName))].length}
-                </div>
-                <p className="text-foreground/70">जिल्ला</p>
-              </div>
-              <div className="bg-card rounded-lg p-6 border border-border">
-                <div className="text-4xl font-bold text-accent mb-2">
-                  {candidates.filter((c) => c.Gender === 'महिला').length}
-                </div>
-                <p className="text-foreground/70">महिला उम्मेदवार</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <GenderChart data={getGenderAnalysis()} title="लिङ्ग वितरण" description="पुरुष र महिला उम्मेदवारहरूको अनुपात" />
-              <BarChartComponent data={getAgeGroupAnalysis()} title="उमेर समूह वितरण" description="विभिन्न उमेर समूहमा उम्मेदवारहरूको वितरण" xKey="name" yKey="value" />
-              <BarChartComponent data={getPartyAnalysis().slice(0, 10)} title="शीर्ष १० दलहरू" description="सबैभन्दा बढी उम्मेदवार भएको दलहरू" xKey="name" yKey="value" />
-            </div>
+            <Button
+              disabled={selectedCandidates.length !== 2}
+              className="w-full"
+              onClick={() =>
+                router.push(
+                  `/compare?c1=${selectedCandidates[0]}&c2=${selectedCandidates[1]}`
+                )
+              }
+            >
+              तुलना गर्नुहोस्
+            </Button>
           </div>
-        </section>
+        )}
 
         <Footer />
       </main>
