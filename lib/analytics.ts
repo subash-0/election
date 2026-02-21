@@ -148,7 +148,6 @@ export function getProvinceEducationAnalysis() {
       province,
       educations: Object.entries(educations)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
         .map(([edu, count]) => ({
           education: edu,
           count,
@@ -213,4 +212,46 @@ export function getSummaryStats() {
     totalParties,
     totalProvinces,
   };
+}
+
+// ... existing imports and types ...
+
+// New: Province vs No. of Candidates
+export function getProvinceCandidateAnalysis() {
+  const provinceCounts: Record<string, number> = {};
+
+  (candidates as Candidate[]).forEach((candidate) => {
+    const province = candidate.StateName || 'अज्ञात';
+    provinceCounts[province] = (provinceCounts[province] || 0) + 1;
+  });
+
+  return Object.entries(provinceCounts)
+    .sort((a, b) => b[1] - a[1]) // Sort by candidate count
+    .map(([name, value]) => ({
+      name,
+      value,
+      percentage: ((value / (candidates as Candidate[]).length) * 100).toFixed(1),
+    }));
+}
+
+// New: Province vs No. of Parties
+export function getProvincePartyAnalysis() {
+  const provinceParties: Record<string, Set<string>> = {};
+
+  (candidates as Candidate[]).forEach((candidate) => {
+    const province = candidate.StateName || 'अज्ञात';
+    const party = candidate.PoliticalPartyName || 'अज्ञात';
+
+    if (!provinceParties[province]) {
+      provinceParties[province] = new Set();
+    }
+    provinceParties[province].add(party);
+  });
+
+  return Object.entries(provinceParties)
+    .map(([name, partySet]) => ({
+      name,
+      value: partySet.size,
+    }))
+    .sort((a, b) => b.value - a.value);
 }

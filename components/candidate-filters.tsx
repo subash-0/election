@@ -56,7 +56,7 @@ export function CandidateFilters({
       gender: '',
       qualification: '',
       chetra: 0,
-      ageRange: [20, 70],
+      ageRange: [20, 90],
     })
   }
 
@@ -66,7 +66,7 @@ export function CandidateFilters({
     return Array.from(
       new Set(
         candidates
-          .filter(c => c.StateName === filters.province)
+          .filter(c => c.StateName?.trim() === filters.province?.trim())
           .map(c => c.DistrictName)
       )
     ).sort()
@@ -250,7 +250,7 @@ export function CandidateFilters({
 
             <Slider.Root
               min={20}
-              max={70}
+              max={90}
               step={1}
               value={filters.ageRange}
               onValueChange={value =>

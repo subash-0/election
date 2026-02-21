@@ -24,14 +24,14 @@ export default function Home() {
   const router = useRouter()
 
   const [filters, setFilters] = useState<Filters>({
-    searchTerm: '',
-    province: '',
-    district: '',
-    party: '',
-    gender: '',
-    qualification: '',
+    searchTerm: "",
+    province: "",
+    district: "",
+    party: "",
+    gender: "",
+    qualification: "",
     chetra: 0,
-    ageRange: [20, 70],
+    ageRange: [20, 90],
   })
 
   const [visibleCount, setVisibleCount] = useState(20)
@@ -49,29 +49,66 @@ export default function Home() {
   // Unique values
   const parties = useMemo(() => [...new Set(candidates.map(c => c.PoliticalPartyName))].sort(), [])
   const provinces = useMemo(() => [...new Set(candidates.map(c => c.StateName))].sort(), [])
-  const qualifications = useMemo(() => [...new Set(candidates.map(c => c.QUALIFICATION))].sort(), [])
+  const qualifications = useMemo(() => [...new Set(candidates.map(c => c.QUALIFICATION??''))].sort(), [])
 
   // Districts filtered by selected province
-  const districts = useMemo(() => {
-    if (!filters.province) return [...new Set(candidates.map(c => c.DistrictName))].sort()
-    return [...new Set(candidates.filter(c => c.StateName === filters.province).map(c => c.DistrictName))].sort()
-  }, [filters.province])
+ const districts = useMemo(() => {
+  if (!filters.province) 
+    return [...new Set(candidates.map(c => c.DistrictName.trim()))].sort();
+
+  return [...new Set(
+    candidates
+      .filter(c => c.StateName?.trim() === filters.province?.trim()) // trim spaces
+      .map(c => c.DistrictName.trim())
+  )].sort();
+}, [filters.province]);
 
   // Filter candidates
-  const filteredCandidates = useMemo(() => {
-    return candidates.filter((c) => {
-      const matchesSearch = filters.searchTerm === '' || c.CandidateName.toLowerCase().includes(filters.searchTerm.toLowerCase())
-      const matchesProvince = filters.province === '' || c.StateName === filters.province
-      const matchesDistrict = filters.district === '' || c.DistrictName === filters.district
-      const matchesParty = filters.party === '' || c.PoliticalPartyName === filters.party
-      const matchesGender = filters.gender === '' || c.Gender === filters.gender
-      const matchesQualification = filters.qualification === '' || c.QUALIFICATION === filters.qualification
-      const matchesChetra = filters.chetra === 0 || c.ConstName === filters.chetra
-      const matchesAge = c.AGE_YR >= filters.ageRange[0] && c.AGE_YR <= filters.ageRange[1]
+const filteredCandidates = useMemo(() => {
+  return candidates.filter((c) => {
+    const normalize = (str?: string) => str?.normalize().trim().toLowerCase() || '';
 
-      return matchesSearch && matchesProvince && matchesDistrict && matchesParty && matchesGender && matchesQualification && matchesChetra && matchesAge
-    })
-  }, [filters])
+    const matchesSearch =
+      filters.searchTerm === '' ||
+      normalize(c.CandidateName).includes(normalize(filters.searchTerm));
+
+    const matchesProvince =
+      filters.province === '' ||
+      normalize(c.StateName) === normalize(filters.province);
+
+    const matchesDistrict =
+      filters.district === '' ||
+      normalize(c.DistrictName) === normalize(filters.district);
+
+    const matchesParty =
+      filters.party === '' ||
+      normalize(c.PoliticalPartyName) === normalize(filters.party);
+
+    const matchesGender =
+      filters.gender === '' || c.Gender === filters.gender;
+
+    const matchesQualification =
+      filters.qualification === '' ||
+      normalize(c.QUALIFICATION??'') === normalize(filters.qualification);
+
+    const matchesChetra =
+      filters.chetra === 0 || c.ConstName === filters.chetra;
+
+    const matchesAge =
+      c.AGE_YR >= filters.ageRange[0] && c.AGE_YR <= filters.ageRange[1];
+
+    return (
+      matchesSearch &&
+      matchesProvince &&
+      matchesDistrict &&
+      matchesParty &&
+      matchesGender &&
+      matchesQualification &&
+      matchesChetra &&
+      matchesAge
+    );
+  });
+}, [filters]);
 
   const visibleCandidates = filteredCandidates.slice(0, visibleCount)
 
@@ -127,8 +164,8 @@ export default function Home() {
               )}
 
               {visibleCount < filteredCandidates.length && (
-                <div className="mt-8 text-center">
-                  <Button onClick={() => setVisibleCount(prev => prev + 20)}>थप उम्मेदवारहरू</Button>
+                <div className="mt-8 text-center cursor-pointer">
+                  <Button onClick={() => setVisibleCount(prev => prev + 20)} className='w-fit cursor-pointer'>थप उम्मेदवारहरू</Button>
                 </div>
               )}
             </div>
@@ -141,7 +178,7 @@ export default function Home() {
             <p className="text-sm mb-3 text-foreground/70">{selectedCandidates.length}/2 उम्मेदवार चयन गरिएको</p>
             <Button
               disabled={selectedCandidates.length !== 2}
-              className="w-full"
+              className="w-full cursor-pointer"
               onClick={() => router.push(`/compare?c1=${selectedCandidates[0]}&c2=${selectedCandidates[1]}`)}
             >
               तुलना गर्नुहोस्

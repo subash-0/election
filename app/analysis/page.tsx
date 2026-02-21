@@ -18,9 +18,13 @@ import {
   getProvinceEducationAnalysis,
   getPartyEducationAnalysis,
   getSummaryStats,
+  getProvinceCandidateAnalysis, // New
+  getProvincePartyAnalysis,     // New
 } from '@/lib/analytics';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Footer } from '@/components/footer';
+import { Button } from '@/components/ui/button';
+import { ChevronDown, ChevronUp, MapPin, Users, Landmark } from 'lucide-react';
 
 export default function AnalysisPage() {
   const genderData = getGenderAnalysis();
@@ -30,18 +34,23 @@ export default function AnalysisPage() {
   const partyAgeData = getPartyAgeAnalysis();
   const provinceEducationData = getProvinceEducationAnalysis();
   const partyEducationData = getPartyEducationAnalysis();
+  const provinceCandidateData = getProvinceCandidateAnalysis(); // New
+  const provincePartyData = getProvincePartyAnalysis();         // New
   const stats = getSummaryStats();
+
+  const [expandedPartyEdu, setExpandedPartyEdu] = useState<Record<number, boolean>>({});
+  const [expandedProvinceEdu, setExpandedProvinceEdu] = useState<Record<number, boolean>>({});
+
+  const togglePartyExpand = (idx: number) => setExpandedPartyEdu((prev) => ({ ...prev, [idx]: !prev[idx] }));
+  const toggleProvinceExpand = (idx: number) => setExpandedProvinceEdu((prev) => ({ ...prev, [idx]: !prev[idx] }));
 
   return (
     <>
       <Navbar />
       <main className="min-h-screen bg-background">
-        {/* Hero Section */}
-        <section className="border-b border-border  px-2 md:px-8 sm:px-4 lg:px-12 bg-gradient-to-br from-primary/5 via-background to-background py-12 md:py-20">
+        <section className="border-b border-border px-2 md:px-8 sm:px-4 lg:px-12 bg-gradient-to-br from-primary/5 via-background to-background py-12 md:py-20">
           <div className="container mx-auto px-4">
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-              विस्तृत विश्लेषण
-            </h1>
+            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">विस्तृत विश्लेषण</h1>
             <p className="text-xl text-foreground/70 max-w-2xl">
               चुनाव उम्मेदवारहरूको गहिराइमा विश्लेषण - लिङ्ग, उमेर, शिक्षा, दल र प्रदेशद्वारा
             </p>
@@ -72,46 +81,71 @@ export default function AnalysisPage() {
           </div>
         </section>
 
-        {/* Analysis Tabs */}
         <section className="py-12 md:py-20 px-2 md:px-8 sm:px-4 lg:px-12">
           <div className="container mx-auto px-4">
             <Tabs defaultValue="gender" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 md:grid-cols-7 mb-8 h-auto">
-                <TabsTrigger value="gender" className="text-xs md:text-sm">
-                  लिङ्ग
-                </TabsTrigger>
-                <TabsTrigger value="age" className="text-xs md:text-sm">
-                  उमेर समूह
-                </TabsTrigger>
-                <TabsTrigger value="education" className="text-xs md:text-sm">
-                  शिक्षा
-                </TabsTrigger>
-                <TabsTrigger value="party" className="text-xs md:text-sm">
-                  दलहरू
-                </TabsTrigger>
-                <TabsTrigger value="partyage" className="text-xs md:text-sm">
-                  दल & उमेर
-                </TabsTrigger>
-                <TabsTrigger value="partyedu" className="text-xs md:text-sm">
-                  दल & शिक्षा
-                </TabsTrigger>
-                <TabsTrigger value="provinceedu" className="text-xs md:text-sm">
-                  प्रदेश & शिक्षा
-                </TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 mb-8 h-auto">
+                <TabsTrigger value="gender" className="text-xs md:text-sm">लिङ्ग</TabsTrigger>
+                <TabsTrigger value="age" className="text-xs md:text-sm">उमेर</TabsTrigger>
+                <TabsTrigger value="education" className="text-xs md:text-sm">शिक्षा</TabsTrigger>
+                <TabsTrigger value="party" className="text-xs md:text-sm">दलहरू</TabsTrigger>
+                <TabsTrigger value="province" className="text-xs md:text-sm font-bold">प्रदेशहरू</TabsTrigger> {/* New */}
+                <TabsTrigger value="partyage" className="text-xs md:text-sm">दल-उमेर</TabsTrigger>
+                <TabsTrigger value="partyedu" className="text-xs md:text-sm">दल-शिक्षा</TabsTrigger>
+                <TabsTrigger value="provinceedu" className="text-xs md:text-sm">प्रदेश-शिक्षा</TabsTrigger>
               </TabsList>
+
+              {/* Province Overview Analysis (NEW) */}
+              <TabsContent value="province" className="space-y-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <BarChartComponent 
+                    data={provinceCandidateData} 
+                    title="प्रदेश अनुसार उम्मेदवार संख्या" 
+                    description="कुन प्रदेशबाट कति उम्मेदवारले प्रतिनिधित्व गर्दैछन्?" 
+                    xKey="name" 
+                    yKey="value" 
+                  />
+                  <BarChartComponent 
+                    data={provincePartyData} 
+                    title="प्रदेश अनुसार दलहरूको संख्या" 
+                    description="प्रत्येक प्रदेशमा प्रतिस्पर्धा गरिरहेका कुल राजनीतिक दलहरू" 
+                    xKey="name" 
+                    yKey="value" 
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <Card>
+                      <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Users className="w-5 h-5 text-primary"/> प्रदेश अनुसार उम्मेदवार विवरण</CardTitle></CardHeader>
+                      <CardContent className="space-y-3">
+                        {provinceCandidateData.map((item, idx) => (
+                          <div key={idx} className="flex justify-between items-center pb-2 border-b last:border-0">
+                            <span className="text-sm font-medium">{item.name}</span>
+                            <span className="text-sm font-bold text-primary">{item.value} जना</span>
+                          </div>
+                        ))}
+                      </CardContent>
+                   </Card>
+                   <Card>
+                      <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Landmark className="w-5 h-5 text-accent"/> प्रदेश अनुसार सक्रिय दलहरू</CardTitle></CardHeader>
+                      <CardContent className="space-y-3">
+                        {provincePartyData.map((item, idx) => (
+                          <div key={idx} className="flex justify-between items-center pb-2 border-b last:border-0">
+                            <span className="text-sm font-medium">{item.name}</span>
+                            <span className="text-sm font-bold text-accent">{item.value} दलहरू</span>
+                          </div>
+                        ))}
+                      </CardContent>
+                   </Card>
+                </div>
+              </TabsContent>
 
               {/* Gender Analysis */}
               <TabsContent value="gender" className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <GenderChart
-                    data={genderData}
-                    title="उम्मेदवार लिङ्ग वितरण"
-                    description="पुरुष र महिला उम्मेदवारहरूको तुलनात्मक विश्लेषण"
-                  />
+                  <GenderChart data={genderData} title="उम्मेदवार लिङ्ग वितरण" description="पुरुष र महिला उम्मेदवारहरूको तुलनात्मक विश्लेषण" />
                   <Card className="border-border">
-                    <CardHeader>
-                      <CardTitle className="text-lg">लिङ्ग विवरण</CardTitle>
-                    </CardHeader>
+                    <CardHeader><CardTitle className="text-lg">लिङ्ग विवरण</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
                       {genderData.map((item, idx) => (
                         <div key={idx} className="pb-4 border-b border-border last:border-b-0">
@@ -121,20 +155,12 @@ export default function AnalysisPage() {
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="flex-1 bg-secondary rounded-full h-2 overflow-hidden">
-                              <div
-                                className="bg-primary h-full rounded-full"
-                                style={{ width: `${item.percentage}%` }}
-                              />
+                              <div className="bg-primary h-full rounded-full" style={{ width: `${item.percentage}%` }} />
                             </div>
-                            <span className="text-sm text-foreground/60 min-w-fit">
-                              {item.percentage}%
-                            </span>
+                            <span className="text-sm text-foreground/60 min-w-fit">{item.percentage}%</span>
                           </div>
                         </div>
                       ))}
-                      <div className="mt-4 pt-4 border-t border-border text-sm text-foreground/70">
-                        <p>महिला उम्मेदवारहरूको प्रतिनिधित्व {stats.femalePercentage}% छ।</p>
-                      </div>
                     </CardContent>
                   </Card>
                 </div>
@@ -143,17 +169,9 @@ export default function AnalysisPage() {
               {/* Age Group Analysis */}
               <TabsContent value="age" className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <BarChartComponent
-                    data={ageData}
-                    title="उमेर समूहमा वितरण"
-                    description="विभिन्न उमेर समूहमा उम्मेदवारहरूको संख्या"
-                    xKey="name"
-                    yKey="value"
-                  />
+                  <BarChartComponent data={ageData} title="उमेर समूहमा वितरण" description="विभिन्न उमेर समूहमा उम्मेदवारहरूको संख्या" xKey="name" yKey="value" />
                   <Card className="border-border">
-                    <CardHeader>
-                      <CardTitle className="text-lg">उमेर समूह विश्लेषण</CardTitle>
-                    </CardHeader>
+                    <CardHeader><CardTitle className="text-lg">उमेर समूह विश्लेषण</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
                       {ageData.map((item, idx) => (
                         <div key={idx} className="pb-4 border-b border-border last:border-b-0">
@@ -163,14 +181,9 @@ export default function AnalysisPage() {
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="flex-1 bg-secondary rounded-full h-2 overflow-hidden">
-                              <div
-                                className="bg-accent h-full rounded-full"
-                                style={{ width: `${item.percentage}%` }}
-                              />
+                              <div className="bg-accent h-full rounded-full" style={{ width: `${item.percentage}%` }} />
                             </div>
-                            <span className="text-sm text-foreground/60 min-w-fit">
-                              {item.percentage}%
-                            </span>
+                            <span className="text-sm text-foreground/60 min-w-fit">{item.percentage}%</span>
                           </div>
                         </div>
                       ))}
@@ -181,41 +194,25 @@ export default function AnalysisPage() {
 
               {/* Education Analysis */}
               <TabsContent value="education" className="space-y-6">
-                <HorizontalBarChart
-                  data={educationData}
-                  title="शीर्ष १० शैक्षणिक योग्यताहरू"
-                  description="उम्मेदवारहरूको सबैभन्दा सामान्य शैक्षणिक योग्यताहरू"
-                />
+                <HorizontalBarChart data={educationData} title="शीर्ष १० शैक्षणिक योग्यताहरू" description="उम्मेदवारहरूको सबैभन्दा सामान्य शैक्षणिक योग्यताहरू" />
               </TabsContent>
 
               {/* Party Analysis */}
               <TabsContent value="party" className="space-y-6">
                 <div className="space-y-8">
-                  <BarChartComponent
-                    data={partyData.slice(0, 12)}
-                    title="शीर्ष १२ राजनीतिक दलहरू"
-                    description="सबैभन्दा बढी उम्मेदवार भएको दलहरू"
-                    xKey="name"
-                    yKey="value"
-                  />
+                  <BarChartComponent data={partyData.slice(0, 12)} title="शीर्ष १२ राजनीतिक दलहरू" description="सबैभन्दा बढी उम्मेदवार भएको दलहरू" xKey="name" yKey="value" />
                   <Card className="border-border">
-                    <CardHeader>
-                      <CardTitle className="text-lg">दल विवरण</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {partyData.slice(0, 8).map((item, idx) => (
-                          <div key={idx} className="flex justify-between items-center pb-3 border-b border-border last:border-b-0">
-                            <span className="text-foreground text-sm">{item.name}</span>
-                            <div className="flex items-center gap-3">
-                              <span className="text-primary font-semibold">{item.value}</span>
-                              <span className="text-foreground/60 text-sm min-w-fit">
-                                {item.percentage}%
-                              </span>
-                            </div>
+                    <CardHeader><CardTitle className="text-lg">दल विवरण</CardTitle></CardHeader>
+                    <CardContent className="space-y-3">
+                      {partyData.slice(0, 8).map((item, idx) => (
+                        <div key={idx} className="flex justify-between items-center pb-3 border-b border-border last:border-b-0">
+                          <span className="text-foreground text-sm">{item.name}</span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-primary font-semibold">{item.value}</span>
+                            <span className="text-foreground/60 text-sm min-w-fit">{item.percentage}%</span>
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      ))}
                     </CardContent>
                   </Card>
                 </div>
@@ -223,59 +220,42 @@ export default function AnalysisPage() {
 
               {/* Party and Age Analysis */}
               <TabsContent value="partyage" className="space-y-6">
-                <StackedBarChart
-                  data={partyAgeData}
-                  title="दलहरू र उमेर समूहको विश्लेषण"
-                  description="प्रमुख दलहरूमा विभिन्न उमेर समूहको वितरण"
-                  categories={['20-30', '30-40', '40-50', '50-60', '60+']}
-                />
+                <StackedBarChart data={partyAgeData} title="दलहरू र उमेर समूहको विश्लेषण" description="प्रमुख दलहरूमा विभिन्न उमेर समूहको वितरण" categories={['20-30', '30-40', '40-50', '50-60', '60+']} />
               </TabsContent>
 
               {/* Party Education Analysis */}
               <TabsContent value="partyedu" className="space-y-6">
                 <div className="grid grid-cols-1 gap-6">
                   <Card className="border-border">
-                    <CardHeader>
-                      <CardTitle className="text-lg">दल र शिक्षा विश्लेषण</CardTitle>
-                    </CardHeader>
+                    <CardHeader><CardTitle className="text-lg">दल र शिक्षा विश्लेषण</CardTitle></CardHeader>
                     <CardContent className="space-y-6">
-                      {partyEducationData.map((party, partyIdx) => (
-                        <div key={partyIdx} className="pb-6 border-b border-border last:border-b-0 last:pb-0">
-                          <h3 className="font-semibold text-foreground mb-4 text-primary">{party.party}</h3>
-                          <div className="space-y-3 ml-4">
-                            {party.educations.map((edu, eduIdx) => (
-                              <div key={eduIdx} className="pb-2">
-                                <div className="flex justify-between items-center mb-2">
-                                  <span className="text-foreground/80 text-sm">{edu.education}</span>
-                                  <span className="text-primary font-semibold text-sm">{edu.count}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div className="flex-1 bg-secondary rounded-full h-2 overflow-hidden">
-                                    <div
-                                      className="bg-accent h-full rounded-full"
-                                      style={{
-                                        width: `${(edu.count / (party.educations[0]?.count || 1)) * 100}%`,
-                                      }}
-                                    />
+                      {partyEducationData.map((party, partyIdx) => {
+                        const isExpanded = expandedPartyEdu[partyIdx];
+                        const displayEducations = isExpanded ? party.educations : party.educations.slice(0, 5);
+                        return (
+                          <div key={partyIdx} className="pb-6 border-b border-border last:border-b-0 last:pb-0">
+                            <h3 className="font-semibold text-foreground mb-4 text-primary">{party.party}</h3>
+                            <div className="space-y-3 ml-4">
+                              {displayEducations.map((edu, eduIdx) => (
+                                <div key={eduIdx} className="pb-2">
+                                  <div className="flex justify-between items-center mb-2">
+                                    <span className="text-foreground/80 text-sm">{edu.education}</span>
+                                    <span className="text-primary font-semibold text-sm">{edu.count}</span>
                                   </div>
-                                  <span className="text-xs text-foreground/60 min-w-fit">
-                                    {((edu.count / (party.educations[0]?.count || 1)) * 100).toFixed(0)}%
-                                  </span>
+                                  <div className="flex-1 bg-secondary rounded-full h-2 overflow-hidden">
+                                    <div className="bg-accent h-full rounded-full" style={{ width: `${(edu.count / (party.educations[0]?.count || 1)) * 100}%` }} />
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
+                            {party.educations.length > 5 && (
+                              <Button variant="ghost" size="sm" onClick={() => togglePartyExpand(partyIdx)} className="mt-2 ml-4 h-8 text-xs text-muted-foreground">
+                                {isExpanded ? <><ChevronUp className="mr-1 h-3 w-3" /> थोरै</> : <><ChevronDown className="mr-1 h-3 w-3" /> सबै</>}
+                              </Button>
+                            )}
                           </div>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                  <Card className="border-border">
-                    <CardHeader>
-                      <CardTitle className="text-lg">सारांश</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-foreground/70 space-y-3 text-sm">
-                      <p>यो विश्लेषणले विभिन्न राजनीतिक दलहरूमा उम्मेदवारहरूको शैक्षणिक योग्यताको वितरण देखाउँछ।</p>
-                      <p>प्रत्येक दलको लागि, सबैभन्दा सामान्य शैक्षणिक योग्यताहरू र तिनको विस्तारण देखाइएको छ।</p>
+                        );
+                      })}
                     </CardContent>
                   </Card>
                 </div>
@@ -284,33 +264,42 @@ export default function AnalysisPage() {
               {/* Province Education Analysis */}
               <TabsContent value="provinceedu" className="space-y-6">
                 <div className="space-y-8">
-                  {provinceEducationData.map((province, idx) => (
-                    <Card key={idx} className="border-border">
-                      <CardHeader>
-                        <CardTitle className="text-lg">{province.province}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          {province.educations.map((edu, eduIdx) => (
-                            <div key={eduIdx} className="pb-3 border-b border-border last:border-b-0">
-                              <div className="flex justify-between items-center mb-2">
-                                <span className="text-foreground text-sm">{edu.education}</span>
-                                <span className="text-primary font-semibold">{edu.count}</span>
+                  {provinceEducationData.map((province, idx) => {
+                    const isExpanded = expandedProvinceEdu[idx];
+                    const displayEducations = isExpanded ? province.educations : province.educations.slice(0, 5);
+                    return (
+                      <Card key={idx} className="border-border">
+                        <CardHeader><CardTitle className="text-lg">{province.province}</CardTitle></CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            {displayEducations.map((edu, eduIdx) => (
+                              <div key={eduIdx} className="pb-3 border-b border-border last:border-b-0">
+                                <div className="flex justify-between items-center mb-2">
+                                  <span className="text-foreground text-sm">{edu.education}</span>
+                                  <span className="text-primary font-semibold">{edu.count}</span>
+                                </div>
+                                <div className="bg-accent/20 rounded-full h-2 overflow-hidden">
+                                  <div className="bg-accent h-full rounded-full" style={{ width: `${(edu.count / province.educations[0].count) * 100}%` }} />
+                                </div>
                               </div>
-                              <div className="flex-1 bg-secondary rounded-full h-2 overflow-hidden">
-                                <div
-                                  className="bg-accent h-full rounded-full"
-                                  style={{
-                                    width: `${(edu.count / province.educations[0].count) * 100}%`,
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                            ))}
+                          </div>
+                          {province.educations.length > 5 && (
+                            <Button variant="ghost" size="sm" onClick={() => toggleProvinceExpand(idx)} className="mt-4 w-full h-9 text-xs text-muted-foreground">
+                              {isExpanded ? <div className='flex gap-5'>
+                                <ChevronUp className="h-4 w-4" />
+                                <p className="text-xs">थोरै छुटाउनुहोस्</p>
+                              </div> :
+                              <div className='flex gap-5'>
+                                <p className="text-xs">{province?.educations.length - 5} सबै देखाउनुहोस्</p>
+                              <ChevronDown className="h-4 w-4" />
+                              </div> }
+                            </Button>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               </TabsContent>
             </Tabs>
